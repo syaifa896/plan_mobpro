@@ -1,0 +1,19 @@
+# flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/planicon.png"
+
+  android: true
+
+  ios: true
+
+  web:
+    generate: true
+    image_path: "assets/planicon.png"
+
+  windows:
+    generate: true
+    image_path: "assets/planicon.png"
+
+  macos:
+    generate: true
+    image_path: "assets/planicon.png"

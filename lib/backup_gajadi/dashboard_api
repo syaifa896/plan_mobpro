@@ -1,0 +1,153 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:plan/logic/alert.dart';
+import 'package:plan/logic/manggil_api.dart';
+import 'package:plan/tambahubahtugas.dart';
+import 'package:plan/widget/card_tugas.dart';
+
+class Dashboard extends StatefulWidget {
+  final String username;
+  const Dashboard({super.key, required this.username});
+
+  @override
+  State<Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<Dashboard> {
+  bool loadingg = true;
+  List items = [];
+
+  @override
+  void initState() {
+    super.initState();
+    ambilTugas();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Padding(
+          padding: const EdgeInsets.all(2.0),
+          child: Center(
+              child: Image.asset(
+            'assets/planlogo.png',
+            width: 125,
+          )),
+        ),
+        shape: Border(
+          bottom: BorderSide(
+            color: Colors.blueGrey,
+            width: 2.0,
+          ),
+        ),
+      ),
+      body: Visibility(
+        visible: loadingg,
+        replacement: RefreshIndicator(
+          onRefresh: ambilTugas,
+          child: Visibility(
+            visible: items.isNotEmpty,
+            replacement: Center(
+              child: Text(
+                'Belum ada tugas nih, buat dulu?',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
+            child: ListView.builder(
+              itemCount: items.length,
+              padding: EdgeInsets.all(8.0),
+              itemBuilder: (context, index) {
+                final item = items[index];
+
+                return CardTugas(
+                    index: index,
+                    item: item,
+                    navigasiEdit: navigasiKeEdit,
+                    hapusTugas: hapusTugas);
+              },
+            ),
+          ),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: navigasiKeTambah,
+        label: Text(
+          "Tambah Tugas",
+          style: GoogleFonts.plusJakartaSans(),
+        ),
+        icon: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Future<void> navigasiKeEdit(Map item) async {
+    final keTambah = MaterialPageRoute(
+      builder: (context) => TambahUbahTugas(tugasnya: item),
+    );
+    await Navigator.push(context, keTambah);
+    setState(() {
+      loadingg = true;
+    });
+    ambilTugas();
+  }
+
+  Future<void> navigasiKeTambah() async {
+    final keTambah = MaterialPageRoute(
+      builder: (context) => TambahUbahTugas(),
+    );
+    await Navigator.push(context, keTambah);
+    setState(() {
+      loadingg = true;
+    });
+    ambilTugas();
+  }
+
+  Future<void> ambilTugas() async {
+    setState(() {
+      loadingg = true;
+    });
+
+    final response = await LogicAPI.ambilTugas();
+
+    if (response != null) {
+      setState(() {
+        items = response;
+      });
+    } else {
+      alertGagal(context, message: 'Gagal mengambil list tugas dari API');
+    }
+    setState(() {
+      loadingg = false;
+    });
+  }
+
+  Future<void> hapusTugas(String idTugas) async {
+    final isBerhasil = await LogicAPI.hapusTugas(idTugas);
+
+    if (isBerhasil) {
+      final filtered =
+          items.where((element) => element['_id'] != idTugas).toList();
+      setState(() {
+        items = filtered;
+      });
+      alertSukses('Tugas sudah dihapus!');
+    } else {
+      alertGagal(context, message: 'Gagal menghapus tugas!');
+    }
+  }
+
+  void alertSukses(String message) {
+    final snackBar = SnackBar(
+      content: Text(
+        message,
+        style: TextStyle(color: Colors.white),
+      ),
+      backgroundColor: Colors.green[700],
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+}
